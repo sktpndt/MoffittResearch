@@ -45,8 +45,8 @@ sigma = 0.118; rho = 0.95;    eta = 20.19;  mu = 0.00311;
 delta = 0.374; alpha = 1.636; beta = 0.002; gamma = 1;   
 
 % Saket's adjustments
-alpha = 7.6;
-sigma = 1.3;
+% alpha = 6.7;
+% sigma = 1.3;
 
 % alpha = 10;
 % gamma = 1;
@@ -207,6 +207,63 @@ parfor m = 1:size(I0_orig,1)
             ypaths_2{m} = ypath;
 end
 % toc
+
+
+%%
+% %% Getting final positions + solutions to ODE
+% tic
+% % SF2_t / SF2_e = 0.7
+% "Starting Big Loop, 0.7"
+% SF2_e = SF2_t / 0.7;
+% for i = 1:length(SF2_e);
+%     if SF2_e(i) >= 1;
+%         SF2_e(i) = 1;
+%     end
+% end
+% parfor m = 1:size(I0_orig,1)
+% % parfor m = 1:10
+% % for m = 38
+% %     parfor m = 1
+%         "Point " + m
+%         start_time = 0;
+%         dose = dose_vec(m);
+%         num_fx = num_fx_vec(m);    
+%         xpost = 0;
+%         ypost = 0;
+%         xpath = 0;
+%         ypath = 0;
+%         I0 = I0_orig(m, :); % initial conditions
+%         x_I0 = I0(1)/max(x)*(Npoints-1);
+%         y_I0 = I0(2)/max(y)*(Npoints-1);
+%         % how many fractions to run
+%             for k = 1:num_fx
+% %                 "Num_fx = " + k
+%                 % recalculate initCond
+%                 initCond = [I0(1)*SF2_e(m) I0(2)*SF2_t(m)];
+%                 sols = solve(initCond);
+%                 y_vec = sols.y(2,:)/max(y)*(Npoints-1);
+%                 x_vec = sols.y(1,:)/max(x)*(Npoints-1);
+%                if k < num_fx % is this the final fraction?
+%                    % updating I0 to treat w/ another dose 
+%                    I0 = [x_vec(fx_dt)*max(x) y_vec(fx_dt)*max(y)]./(Npoints-1);
+%                    start_time = start_time + fx_dt;
+%                elseif k == num_fx % what to do on final fraction
+%                    % run it out all the way
+%                    x_rt = initCond(1)/max(x)*(Npoints-1);
+%                    y_rt = initCond(2)/max(y)*(Npoints-1);
+%                    xpost = x_rt;
+%                    ypost = y_rt;
+%                    xpath = x_vec; 
+%                    ypath = y_vec;
+%                    start_time = start_time + fx_dt;
+%                end
+%             end
+%             postRT_9(m, :) = [xpost, ypost];
+%             xpaths_9{m} = xpath;
+%             ypaths_9{m} = ypath;
+% end
+% toc
+
 %% Plotting 
 figure(1); clf
 % (SFe = SFt / 0.9)
@@ -321,3 +378,99 @@ aucs_sf9h
 % ylabel('Sensitivity', FontSize = 20)
 % tit = 'ROC Curves for Uniform Multipliers'
 % title(tit, FontSize = 25)
+
+%% Finding solutions to initCond
+
+xpaths_I0 = cell(size(I0_orig, 1), 1);
+ypaths_I0 = cell(size(I0_orig, 1), 1);
+tic
+parfor m = 1:size(I0_orig,1)
+% parfor m = 1:10
+% for m = 38
+%     parfor m = 1
+        "Point " + m
+        start_time = 0;
+%         dose = dose_vec(m);
+%         num_fx = num_fx_vec(m);    
+%         xpost = 0;
+%         ypost = 0;
+        xpath = 0;
+        ypath = 0;
+        I0 = I0_orig(m, :); % initial conditions
+        x_I0 = I0(1)/max(x)*(Npoints-1);
+        y_I0 = I0(2)/max(y)*(Npoints-1);
+        % how many fractions to run
+        sols = solve(I0);
+        y_vec = sols.y(2,:)/max(y)*(Npoints-1);
+        x_vec = sols.y(1,:)/max(x)*(Npoints-1);
+        xpath = x_vec; 
+        ypath = y_vec;
+        xpaths_I0{m} = xpath;
+        ypaths_I0{m} = ypath;
+end
+toc
+%                 "Num_fx = " + k
+                % recalculate initCond
+%                 initCond = [I0(1)*SF2_e(m) I0(2)*SF2_t(m)];
+                
+%                if k < num_fx % is this the final fraction?
+%                    % updating I0 to treat w/ another dose 
+%                    I0 = [x_vec(fx_dt)*max(x) y_vec(fx_dt)*max(y)]./(Npoints-1);
+%                    start_time = start_time + fx_dt;
+%                elseif k == num_fx % what to do on final fraction
+%                    % run it out all the way
+%                    x_rt = initCond(1)/max(x)*(Npoints-1);
+%                    y_rt = initCond(2)/max(y)*(Npoints-1);
+%                    xpost = x_rt;
+%                    ypost = y_rt;
+%                    start_time = start_time + fx_dt;
+%                end
+%             end
+%             postRT_9(m, :) = [xpost, ypost];
+
+
+
+%% Plotting separatrix w/ initCond
+subplot(1,1,1)
+for m = 1:size(I0_orig, 1)
+    "Point " + m
+    % Initial points
+    x_I0 = I0_orig(m, 1)/max(x)*(Npoints-1);
+    y_I0 = I0_orig(m, 2)/max(y)*(Npoints-1);
+    % Final points
+%     x_rt = postRT(m, 1); % scaling by Npoints already done in for loop
+%     y_rt = postRT(m, 2);
+%     % Solutions for final points
+    x_vec = xpaths_I0{m};
+    y_vec = ypaths_I0{m};
+    hold on
+    plot(x_vec,y_vec,'k:','linewidth',0.1); % solsRT
+end
+
+% Separatrix
+plot(curve.x/max(x)*(Npoints-1),curve.y/max(y)*(Npoints-1), LineWidth=2)
+
+% Plot before and after
+% x_I0 = I0_orig(:, 1)/max(x)*(Npoints-1);
+% y_I0 = I0_orig(:, 2)/max(y)*(Npoints-1);
+% pre = scatter(x_I0, y_I0, 50, RSI, 'filled')
+% hold on
+% post = scatter(postRT(:, 1), postRT(:, 2), 75, 'filled')
+% colormap winter
+% colorbar
+
+% Set plot window
+% colorbar
+set(gca, 'xscale', 'log')
+set(gca, 'yscale', 'log')
+ax = gca
+ax.FontSize = 20
+xlabel("E", FontSize = 25)
+ylabel("T", FontSize = 25)
+% xlim([1e-4, 10^2.1])
+% ylim([1e-10, 1e5])
+% tit = "Effects of radiation therapy, rho = " + c3_rho_star
+% tit = "Radiation therapy with Patient-Specific SF_T / SF_E Ratios"
+% tit = "SF2_E = SF2_T / " + 0.9;
+% title(tit, FontSize = 25)
+
