@@ -24,6 +24,10 @@ LocalFailure = ti_sub.LocalFailure;
 % RSI --> Global
 RSI = ti_sub.RSI;
 
+% Setting up I0_orig
+AT = ti_sub.TotalAnti_TumorCase3;
+T = ti_sub.Total_TumorCells;
+
 % Survival fraction ==> not global anymore!
 SF2_t = ti_sub.SF_2_;
 SF2_t = SF2_t * 1.5;
@@ -32,10 +36,18 @@ SF2_rat = readtable("/Users/saketpandit/Documents/Moffitt/Project/MATLAB/Scripts
 rats = SF2_rat{:,1}./SF2_rat{:,2};
 rats = sortrows(rats)
 [min(SF2_t) max(SF2_t)] % / 0.89 is the lowest you can go
-% trying 0.25
 
 
 %% Setting initial parameters
+% dose vector
+dose_vec = ti_sub.FxSize; % dose per fraction
+
+% number of fractions
+num_fx_vec = ti_sub.No_Fractions; % number of doses
+
+% Time steps
+fx_dt = 2; % time steps for regrowth (one time step = 12 hrs)
+
 % Kuznetzov params
 Npoints = 30;
 x = linspace(0,3.5,Npoints);
@@ -82,29 +94,12 @@ rhs = @(t,x)([sigma+rho*x(1,:).*x(2,:)./(eta+x(2,:))-mu*x(1,:).*x(2,:)-delta*x(1
 options = odeset('Refine',100);
 solve = @(init)(ode45(rhs,[0 100],init,options));
     
-% Separatrix Plotting is below
-
-% Setting up I0_orig
-AT = ti_sub.TotalAnti_TumorCase3;
-T = ti_sub.Total_TumorCells;
-% AT = AT/max(AT)
-% T = T/max(T)
-
 % NEW SCALING
 AT = AT./(T+AT);
 T = T./(T+AT);
 % Assuming tumor volume of 10^7.5 cells
 I0_orig = [AT, T]*10^7.5;
 I0 = I0_orig;
-
-% dose vector
-dose_vec = ti_sub.FxSize; % dose per fraction
-
-% number of fractions
-num_fx_vec = ti_sub.No_Fractions; % number of doses
-
-% Time steps
-fx_dt = 2; % time steps for regrowth (one time step = 12 hrs)
 
 
 % CREATE A VECTOR OF PRE-POST VALUES (so I don't have to run it every time)
@@ -127,10 +122,10 @@ for i = 1:size(SFends, 1)
 end
 
 % Cutoff for escape / resolve
-threshold = 5
+threshold = 5;
 
 %% Sweeping across SF ratios
-tic
+%tic
 "Starting Big Loop"
 parfor m = 1:size(I0_orig,1)
 % for m = 1:size(I0_orig, 1) % for debugging
@@ -188,7 +183,7 @@ parfor m = 1:size(I0_orig,1)
             end
         end
     end
-toc
+%toc
 
 %% Visualizing SFends
 figure(3);clf
@@ -212,7 +207,7 @@ for m = 1:50
 % for m = 4:6
     ratios = SFends{m, 2};
     lrf = SFends{m, 3};
-    preds = [ratios' lrf];
+    preds = [ratios lrf];
     sortrows(preds, 1);
     if LocalFailure(m) == 1
         for k = 1:size(preds, 1)
@@ -249,7 +244,7 @@ ax.FontSize = 18
 title("Patient-Specific Effector Cell Survival Fractions", FontSize = 20)
 
 %% Solving ODE with patient specific SF ratios (rstar)
-tic
+%tic
 "Starting Big Loop"
 parfor m = 1:size(I0_orig,1)
 % parfor m = 1:10
@@ -295,8 +290,10 @@ parfor m = 1:size(I0_orig,1)
             xpaths{m} = xpath;
             ypaths{m} = ypath;
     end
-toc
-%% Plotting with pt-spec SF ratios %% <-- DONT USE THIS ONE, USE THE ONE IN PLOTS_ETC
+%toc
+
+
+%% Plotting with pt-spec SF ratios %% <-- DONT USE THIS, USE THE SCRIPT IN PLOTS_ETC
 
 figure(2); clf  
 subplot(1,1,1)
