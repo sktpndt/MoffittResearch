@@ -48,6 +48,8 @@ delta = 0.374; alpha = 1.636; beta = 0.002; gamma = 1;
 % alpha = 6.7;
 % sigma = 1.3;
 
+mu = 0.008;
+
 % alpha = 10;
 % gamma = 1;
 % beta = 0.0021;
@@ -108,6 +110,14 @@ ypaths_2 = cell(size(I0_orig, 1), 1);
 
 % Solution vectors
 solsRT_2 = cell(size(I0_orig));
+
+% SFt / SFe = 1
+postRT_1 = zeros(size(I0_orig));
+xpaths_1 = cell(size(I0_orig, 1), 1);
+ypaths_1 = cell(size(I0_orig, 1), 1);
+
+% Solution vectors
+solsRT_1 = cell(size(I0_orig));
 
 
 %% Getting final positions + solutions to ODE
@@ -264,7 +274,56 @@ end
 % end
 % toc
 
-%% Plotting 
+%% Getting final positions + solutions to ODE
+
+% SFt / SFe = 1
+% tic
+"Starting Big Loop, 1"
+SF2_e = SF2_t / 1;
+parfor m = 1:size(I0_orig,1)
+% parfor m = 1:10
+% for m = 38
+%     parfor m = 1
+        "Point " + m
+        start_time = 0;
+        dose = dose_vec(m);
+        num_fx = num_fx_vec(m);    
+        xpost = 0;
+        ypost = 0;
+        xpath = 0;
+        ypath = 0;
+        I0 = I0_orig(m, :); % initial conditions
+        x_I0 = I0(1)/max(x)*(Npoints-1);
+        y_I0 = I0(2)/max(y)*(Npoints-1);
+        % how many fractions to run
+            for k = 1:num_fx
+%                 "Num_fx = " + k
+                % recalculate initCond
+                initCond = [I0(1)*SF2_e(m) I0(2)*SF2_t(m)];
+                sols = solve(initCond);
+                y_vec = sols.y(2,:)/max(y)*(Npoints-1);
+                x_vec = sols.y(1,:)/max(x)*(Npoints-1);
+               if k < num_fx % is this the final fraction?
+                   % updating I0 to treat w/ another dose 
+                   I0 = [x_vec(fx_dt)*max(x) y_vec(fx_dt)*max(y)]./(Npoints-1);
+                   start_time = start_time + fx_dt;
+               elseif k == num_fx % what to do on final fraction
+                   % run it out all the way
+                   x_rt = initCond(1)/max(x)*(Npoints-1);
+                   y_rt = initCond(2)/max(y)*(Npoints-1);
+                   xpost = x_rt;
+                   ypost = y_rt;
+                   xpath = x_vec; 
+                   ypath = y_vec;
+                   start_time = start_time + fx_dt;
+               end
+            end
+            postRT_1(m, :) = [xpost, ypost];
+            xpaths_1{m} = xpath;
+            ypaths_1{m} = ypath;
+end
+
+%% Plotting for R = 0.9 and R = 2
 figure(1); clf
 % (SFe = SFt / 0.9)
 subplot(1,1,1)
@@ -311,10 +370,35 @@ xlabel("Effector Cell Count", FontSize = 30)
 ylabel("Tumor Cell Count", FontSize = 30)
 xlim([1e-4, 10^8])
 ylim([1e-20, 1e4])
-legend(post_2, 'Locoregional Control', 'Locoregional Failure', Location='southeast', fontsize=25)
+legend(post_1, 'Locoregional Control', 'Locoregional Failure', Location='southeast', fontsize=25)
 tit = "R = " + 2;
 title(tit, FontSize = 35)
 toc
+
+%% Plotting for R = 1
+% (SFe = SFt / 1)
+figure(3);clf
+subplot(1,1,1)
+post_1 = gscatter(postRT_1(:,1), postRT_1(:,2), LocalFailure, ['b', 'r'], ".", 60)
+hold on
+% Plot separatrix
+% plot(curve.x/max(x)*(Npoints-1),curve.y/max(y)*(Npoints-1), LineWidth=5, ...
+%     Color=[0.8 0.34 0.34])
+
+% Set plot window
+% colorbar
+set(gca, 'xscale', 'log')
+% set(gca, 'Xticklabel', [])
+set(gca, 'yscale', 'log')
+ax = gca
+ax.FontSize = 20
+xlabel("Effector Cell Count", FontSize = 30)
+ylabel("Tumor Cell Count", FontSize = 30)
+xlim([1e-4, 10^8])
+ylim([1e-20, 1e4])
+legend(post_2, 'Locoregional Control', 'Locoregional Failure', Location='southeast', fontsize=25)
+tit = "R = " + 1;
+title(tit, FontSize = 35)
 
 
 %% Calculating Sensitivity / Specificity
