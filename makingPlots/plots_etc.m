@@ -18,9 +18,10 @@ figure(5); clf
 % Together
 subplot(1,1,1)
 % Plot separatrix
-% plot(curve.x/max(x)*(Npoints-1),curve.y/max(y)*(Npoints-1), LineWidth=10, ...
+% plot(curve.x/max(x)*(Npoints-1),curve.y/max(y)*(Npoints-1), LineWidth=4, ...
 %     Color=[0.8 0.34 0.34])
 % hold on
+
 % Plot before and after
 x_I0 = I0_orig(:, 1)/max(x)*(Npoints-1);
 y_I0 = I0_orig(:, 2)/max(y)*(Npoints-1);
@@ -75,9 +76,15 @@ figure(8); clf
 subplot(1,1,1)
 % Plot separatrix
 
-Npoints = 30;
+% Npoints = 30;
 % x = linspace(0,3.5,Npoints);
 % y = linspace(0,450,Npoints);
+
+% just playing around
+% Npoints = 30;
+% x = linspace(0,300,Npoints);
+% y = linspace(0,500,Npoints);
+
 
 % Kuznetzov parameters
 sigma = 0.118; rho = 0.95;    eta = 20.19;  mu = 0.00311;
@@ -92,6 +99,20 @@ plot(curve.x/max(x)*(Npoints-1),curve.y/max(y)*(Npoints-1), LineWidth=7, ...
 hold on
 
 post = gscatter(postRT(:, 1), postRT(:, 2), LocalFailure, ['b', 'r'], ".", 50)
+
+% separatrix w/ contour plot
+dx = x(2)-x(1);
+dy = y(2)-y(1);
+[X, Y] = meshgrid(x,y);
+G = rhs([],[reshape(X,1,[]); reshape(Y,1,[])]);
+U = reshape(G(1,:),Npoints,Npoints);
+V = reshape(G(2,:),Npoints,Npoints)*dx/dy;
+N = sqrt(U.^2+V.^2);
+U = U./N; V = V./N;
+[X1, Y1] = meshgrid(0:Npoints-1,0:Npoints-1);
+q = streamslice(X1,Y1,U,V); 
+% q.Color = [0 0 0]; 
+% q.AutoScaleFactor = 0.5;
 
 % Window settings
 set(gca, 'xscale', 'log')
