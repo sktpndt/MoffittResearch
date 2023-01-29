@@ -379,11 +379,46 @@ toc
 % (SFe = SFt / 1)
 figure(3);clf
 subplot(1,1,1)
+
+% Scatterplot of points
 post_1 = gscatter(postRT_1(:,1), postRT_1(:,2), LocalFailure, ['b', 'r'], ".", 60)
 hold on
+
+% % Plot solution path
+% for m = 1:size(I0_orig, 1)
+%     "Point " + m
+%     % Initial points
+%     x_I0 = I0_orig(m, 1)/max(x)*(Npoints-1);
+%     y_I0 = I0_orig(m, 2)/max(y)*(Npoints-1);
+%     % Final points
+%     x_rt = postRT_1(m, 1); % scaling by Npoints already done in for loop
+%     y_rt = postRT_1(m, 2);
+% %     % Solutions for final points
+%     x_vec = xpaths_1{m};
+%     y_vec = ypaths_1{m};
+%     hold on
+%     plot(x_vec,y_vec,'k:','linewidth',0.1); % solsRT
+% %     plot([x_rt, x_I0], [y_rt, y_I0],  "b", LineStyle=":", LineWidth=0.001) % Lines connecting the two
+%     if LocalFailure(m) == 1 % bubbles for non-LRF
+% %         plot(x_I0, y_I0, 'bo', markersize = 12)
+%         plot(x_rt, y_rt, 'r.', markersize = 15, LineWidth=2)
+%     end
+% end
+
 % Plot separatrix
-% plot(curve.x/max(x)*(Npoints-1),curve.y/max(y)*(Npoints-1), LineWidth=5, ...
-%     Color=[0.8 0.34 0.34])
+plot(curve.x/max(x)*(Npoints-1),curve.y/max(y)*(Npoints-1), LineWidth=5, ...
+    Color=[0.8 0.34 0.34])
+
+dx = x(2)-x(1);
+dy = y(2)-y(1);
+[X, Y] = meshgrid(x,y);
+G = rhs([],[reshape(X,1,[]); reshape(Y,1,[])]);
+U = reshape(G(1,:),Npoints,Npoints);
+V = reshape(G(2,:),Npoints,Npoints)*dx/dy;
+N = sqrt(U.^2+V.^2);
+U = U./N; V = V./N;
+[X1, Y1] = meshgrid(0:Npoints-1,0:Npoints-1);
+q = streamslice(X1,Y1,U,V); 
 
 % Set plot window
 % colorbar
@@ -396,7 +431,7 @@ xlabel("Effector Cell Count", FontSize = 30)
 ylabel("Tumor Cell Count", FontSize = 30)
 xlim([1e-4, 10^8])
 ylim([1e-20, 1e4])
-legend(post_2, 'Locoregional Control', 'Locoregional Failure', Location='southeast', fontsize=25)
+legend(post_1, 'Locoregional Control', 'Locoregional Failure', Location='southeast', fontsize=25)
 tit = "R = " + 1;
 title(tit, FontSize = 35)
 
