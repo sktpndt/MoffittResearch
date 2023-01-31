@@ -27,9 +27,9 @@ rats = SF2_rat{:,1}./SF2_rat{:,2};
 rats = sortrows(rats);
 %[min(SF2_t) max(SF2_t)] % / 0.89 is the lowest you can go without SF > 1
 
-% Selecting compatible survival fractions
-lowR = 0.8; % 0.6 leaves in 23 rows, 0.4 leaves in 3 rows, 0.5 leaves in 13 rows, 0.8 leaves 43 rows
-cond = SF2_t / lowR  <= 1; 
+% % Selecting compatible survival fractions
+lowR = 0.6; % 0.6 leaves in 23 rows, 0.4 leaves in 3 rows, 0.5 leaves in 13 rows, 0.8 leaves 43 rows
+cond = SF2_t / lowR  < 1; 
 ti_sub = ti_sub(cond,:);
 
 
@@ -135,7 +135,7 @@ tic
 "Starting Big Loop"
 parfor m = 1:size(I0_orig,1)
 % for m = 1:size(I0_orig, 1) % for debugging
-% parfor m = 1:10
+% parfor m = 1:5
 % for m = 38
 %     parfor m = 1
         "Point " + m
@@ -189,7 +189,7 @@ parfor m = 1:size(I0_orig,1)
             end
         end
     end
-toc % ~30min for 13 points
+toc % 
 
 %% Visualizing SFends
 figure(3);clf
