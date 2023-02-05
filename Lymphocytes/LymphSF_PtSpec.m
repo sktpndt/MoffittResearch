@@ -28,7 +28,7 @@ rats = sortrows(rats);
 %[min(SF2_t) max(SF2_t)] % / 0.89 is the lowest you can go without SF > 1
 
 % % Selecting compatible survival fractions
-lowR = 0.6; % 0.6 leaves in 23 rows, 0.4 leaves in 3 rows, 0.5 leaves in 13 rows, 0.8 leaves 43 rows
+lowR = 0.5; % lowR = 0.4 leaves in 3 rows, 0.5 ==> 13, 0.6 ==> 23, 0.7 ==> 35, 0.8 ==> 43 rows
 cond = SF2_t / lowR  < 1; 
 ti_sub = ti_sub(cond,:);
 
@@ -138,7 +138,7 @@ parfor m = 1:size(I0_orig,1)
 % parfor m = 1:5
 % for m = 38
 %     parfor m = 1
-        "Point " + m
+        "Point" + m
         start_time = 0;
         dose = dose_vec(m);
         num_fx = num_fx_vec(m);    
