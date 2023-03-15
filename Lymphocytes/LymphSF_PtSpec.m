@@ -30,7 +30,7 @@ rats = sortrows(rats);
 % % Selecting compatible survival fractions
 lowR = 0.5; % lowR = 0.4 leaves in 3 rows, 0.5 ==> 13, 0.6 ==> 23, 0.7 ==> 35, 0.8 ==> 43 rows
 cond = SF2_t / lowR  < 1; 
-ti_sub = ti_sub(cond,:);
+% ti_sub = ti_sub(cond,:);
 
 
 % Locoregional failure ==> global
@@ -121,10 +121,10 @@ len = 20;
 SFrats = linspace(lowR, 2, len); % corresponding with low end in previous block
 SFends = cell(size(I0_orig, 1), 4);
 for i = 1:size(SFends, 1)
-    SFends{i, 1} = I0_orig(i, :);
-    SFends{i, 2} = SFrats;
-    SFends{i, 3} = zeros(len, 1);
-    SFends{i, 4} = zeros(1);
+    SFends{i, 1} = I0_orig(i, :); % inital values
+    SFends{i, 2} = SFrats; % R-values
+    SFends{i, 3} = zeros(len, 1); % LRF
+    SFends{i, 4} = zeros(1); % Does the point ever switch
 end
 
 % Cutoff for escape / resolve
@@ -133,9 +133,9 @@ threshold = 5;
 %% Sweeping across SF ratios
 tic
 "Starting Big Loop"
-parfor m = 1:size(I0_orig,1)
+% parfor m = 1:size(I0_orig,1)
 % for m = 1:size(I0_orig, 1) % for debugging
-% parfor m = 1:5
+% for m = 1:10 % for debugging
 % for m = 38
 %     parfor m = 1
         "Point" + m
@@ -186,6 +186,8 @@ parfor m = 1:size(I0_orig,1)
                     end
                 end
                 SFends{m, 3}(rt) = rnr;
+            else
+                continue
             end
         end
     end
@@ -252,8 +254,8 @@ title("Patient-Specific Effector Cell Survival Fractions", FontSize = 20)
 %% Solving ODE with patient specific SF ratios (rstar)
 %tic
 "Starting Big Loop"
-parfor m = 1:size(I0_orig,1)
-% parfor m = 1:10
+% parfor m = 1:size(I0_orig,1)
+parfor m = 1:10
 % for m = 38
 %     parfor m = 1
         "Point " + m
@@ -322,6 +324,34 @@ for m = 1:size(I0_orig, 1)
         plot(x_rt, y_rt, 'r.', markersize = 15, LineWidth=2)
     end
 end
+
+Npoints = 10e2;
+x = logspace(-10,1,Npoints);
+y = logspace(-5,3,Npoints);
+
+dx = x(2)-x(1);
+ 
+dy = y(2)-y(1);
+[X, Y] = meshgrid(x,y);
+G = rhs([],[reshape(X,1,[]); reshape(Y,1,[])]);
+U = reshape(G(1,:),Npoints,Npoints);
+V = reshape(G(2,:),Npoints,Npoints)*dx/dy;
+N = sqrt(U.^2+V.^2);
+U = U./N; V = V./N;
+[X1, Y1] = meshgrid(0:Npoints-1,0:Npoints-1);
+q = quiver(X1,Y1,U,V); 
+q.Color = [0 0 0]; 
+q.AutoScaleFactor = 0.5;
+
+ 
+% Kuznetzov Params
+sigma = 0.118; rho = 0.95;    eta = 20.19;  mu = 0.00311;
+delta = 0.374; alpha = 1.636; beta = 0.002; gamma = 1;   
+
+% Saket's adjustments
+alpha = 7.6;
+sigma = 1.3;
+
 % Plot separatrix
 plot(curve.x/max(x)*(Npoints-1),curve.y/max(y)*(Npoints-1), LineWidth=2)
 
