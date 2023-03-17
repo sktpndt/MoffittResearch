@@ -80,10 +80,10 @@ subplot(1,1,1)
 % x = linspace(0,3.5,Npoints);
 % y = linspace(0,450,Npoints);
 
-% just playing around
-% Npoints = 30;
-% x = linspace(0,300,Npoints);
-% y = linspace(0,500,Npoints);
+% % just playing around
+Npoints = 30;
+x = logspace(-4,3,Npoints);
+y = logspace(-10,3,Npoints);
 
 
 % Kuznetzov parameters
@@ -94,11 +94,13 @@ delta = 0.374; alpha = 1.636; beta = 0.002; gamma = 1;
 alpha = 7.6;
 sigma = 1.3;
 
+[curve] = Kuznetsov_SeparatrixCalc(sigma,rho,eta,mu,delta,alpha,beta,gamma);
+
 plot(curve.x/max(x)*(Npoints-1),curve.y/max(y)*(Npoints-1), LineWidth=7, ...
     Color=[0.4 0.34 0.34])
 hold on
 
-post = gscatter(postRT(:, 1), postRT(:, 2), LocalFailure, ['b', 'r'], ".", 50)
+post = gscatter(postRT(:, 1), postRT(:, 2), LocalFailure, ['b', 'r'], ".", 50);
 
 % separatrix w/ contour plot
 dx = x(2)-x(1);
@@ -117,17 +119,18 @@ q = streamslice(X1,Y1,U,V);
 % Window settings
 set(gca, 'xscale', 'log')
 set(gca, 'yscale', 'log')
-legend(post, 'Locoregional Control', 'Locoregional Failure', 'fontsize', 30)
-ax = gca
-ax.FontSize = 20
+% legend(post, 'Locoregional Control', 'Locoregional Failure', 'fontsize', 30)
+legend('off')
+ax = gca;
+ax.FontSize = 20;
 xlabel("Effector Cell Count", FontSize = 30)
 ylabel("Tumor Cell Count", FontSize = 30)
 xlim([1e-4, 10^2.1])
 ylim([1e-10, 1e3])
-tit = "Patient-Specific R Values"
+tit = "Patient-Specific R Values";
 % subtit = "Sensitivity = " + round(17/20, 2) + ", Specificity = " + round(29/30, 2) + ", Accuracy = " + round((29+17)/(29+17+4), 2)
 % tit = "SF2_E = SF2_T / " + 0.9;
-title(tit, FontSize = 35)
+title(tit, FontSize = 35);
 % subtitle(subtit)
 
 
@@ -298,6 +301,7 @@ plot(aucs_in{:, 2}, aucs_in{:, 3})
 
 %% Plot SF_e vs SF_t
 figure(6); clf
+% SF2_t = ti_sub.SF_2_
 SF2_e = SF2_t ./ rstar;
 scat = gscatter(SF2_t, SF2_e, LocalFailure, ['b', 'r'], '.', 60)
 hold on
@@ -311,7 +315,7 @@ line(linspace(0,1,10), linspace(0,1,10), 'Color', 'black', "LineStyle", ":")
 % colorbar
 xlabel("SF_T")
 ylabel("SF_E")
-axis square
+axis ([0.2 0.9 0.1 1], 'square')
 legend(scat, ["Locoregional Control";"Locoregional Failure"], Location='southeast')
 ax = gca;
 ax.FontSize = 20;

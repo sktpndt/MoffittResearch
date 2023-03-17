@@ -12,26 +12,11 @@ ti_all = join(ti_outcome(1:end-9,:), ti_all);
 
 % % Extracting Non-small cell lung cancer
 cond = ti_all.DiseaseSite == "Lung";
-% & ti_all.HistologicalSubtypes ~= "LUSC"
+% & ti_all.HistologicalSubtypes ~= "LUSC"...
 % & ti_all.HistologicalSubtypes ~= "";
 
 % subset of interest
 ti_sub = ti_all(cond,:);
-
-% Survival fraction ==> not global anymore!
-SF2_t = ti_sub.SF_2_;
-SF2_t = SF2_t * 1.5;
-% Patient-specific tumor v lymphocyte SF2 (West et. al. 1998)
-SF2_rat = readtable("/Users/saketpandit/Documents/Moffitt/Project/MATLAB/Scripts/Lymphocytes/Tumor_Lymphocyte_SF2.csv");
-rats = SF2_rat{:,1}./SF2_rat{:,2};
-rats = sortrows(rats);
-%[min(SF2_t) max(SF2_t)] % / 0.89 is the lowest you can go without SF > 1
-
-% % Selecting compatible survival fractions
-lowR = 0.5; % lowR = 0.4 leaves in 3 rows, 0.5 ==> 13, 0.6 ==> 23, 0.7 ==> 35, 0.8 ==> 43 rows
-cond = SF2_t / lowR  < 1; 
-% ti_sub = ti_sub(cond,:);
-
 
 % Locoregional failure ==> global
 LocalFailure = ti_sub.LocalFailure;
@@ -43,6 +28,16 @@ RSI = ti_sub.RSI;
 AT = ti_sub.TotalAnti_TumorCase3;
 T = ti_sub.Total_TumorCells;
 
+% Survival fraction ==> not global anymore!
+SF2_t = ti_sub.SF_2_;
+SF2_t = SF2_t * 1.5;
+% Patient-specific tumor v lymphocyte SF2 (West et. al. 1998)
+SF2_rat = readtable("/Users/saketpandit/Documents/Moffitt/Project/MATLAB/Scripts/Lymphocytes/Tumor_Lymphocyte_SF2.csv")
+rats = SF2_rat{:,1}./SF2_rat{:,2};
+rats = sortrows(rats)
+[min(SF2_t) max(SF2_t)] % / 0.89 is the lowest you can go
+
+
 %% Setting initial parameters
 % dose vector
 dose_vec = ti_sub.FxSize; % dose per fraction
@@ -53,7 +48,7 @@ num_fx_vec = ti_sub.No_Fractions; % number of doses
 % Time steps
 fx_dt = 2; % time steps for regrowth (one time step = 12 hrs)
 
-% Creating the meshgrid
+% Kuznetzov params
 Npoints = 30;
 x = linspace(0,3.5,Npoints);
 y = linspace(0,450,Npoints);
@@ -117,28 +112,27 @@ ypaths = cell(size(I0_orig, 1), 1);
 
 % Ratios
 len = 20;
-% SFrats = linspace(0.9, 2, len);
-SFrats = linspace(lowR, 2, len); % corresponding with low end in previous block
+SFrats = linspace(0.9, 2, len);
 SFends = cell(size(I0_orig, 1), 4);
 for i = 1:size(SFends, 1)
-    SFends{i, 1} = I0_orig(i, :); % inital values
-    SFends{i, 2} = SFrats; % R-values
-    SFends{i, 3} = zeros(len, 1); % LRF
-    SFends{i, 4} = zeros(1); % Does the point ever switch
+    SFends{i, 1} = I0_orig(i, :);
+    SFends{i, 2} = SFrats;
+    SFends{i, 3} = zeros(len, 1);
+    SFends{i, 4} = zeros(1);
 end
 
 % Cutoff for escape / resolve
 threshold = 5;
 
 %% Sweeping across SF ratios
-tic
+%tic
 "Starting Big Loop"
 parfor m = 1:size(I0_orig,1)
 % for m = 1:size(I0_orig, 1) % for debugging
-% for m = 1:10 % for debugging
+% parfor m = 1:10
 % for m = 38
 %     parfor m = 1
-        "Point" + m
+        "Point " + m
         start_time = 0;
         dose = dose_vec(m);
         num_fx = num_fx_vec(m);    
@@ -186,12 +180,10 @@ parfor m = 1:size(I0_orig,1)
                     end
                 end
                 SFends{m, 3}(rt) = rnr;
-            else
-                continue
             end
         end
     end
-toc % 
+%toc
 
 %% Visualizing SFends
 figure(3);clf
@@ -200,22 +192,22 @@ for m = 1:size(SFends, 1)
     plot(SFends{m, 2}, SFends{m, 3})
 end
 
-%% Does the point make a switch?
+%% Does the point ever resolve?
 for m = 1:size(SFends, 1)
     res = max(SFends{m, 3} - min(SFends{m, 3}));
     if res > 0
         SFends{m, 4} = 1;
     end
 end
+SFends
 %% Finding R*
 rstar = zeros(size(SFends, 1), 1);
-for m = 1:size(SFends, 1)
-% for m = 1:50
+% for m = 1:size(SFends, 1)
+for m = 1:50
 % for m = 4:6
-    m
     ratios = SFends{m, 2};
     lrf = SFends{m, 3};
-    preds = [ratios.' lrf];
+    preds = [ratios lrf];
     sortrows(preds, 1);
     if LocalFailure(m) == 1
         for k = 1:size(preds, 1)
@@ -223,21 +215,21 @@ for m = 1:size(SFends, 1)
                 rstar(m) = preds(k, 1); % first value that shifts point to escape
                 break
             else
-                rstar(m) = 1;
+                rstar(m) = 1
             end
         end
     else
         for k = 1:size(preds, 1)
             if preds(k, 2) == 1
                 if k == 1
-                    rstar(m) = preds(1,1); % just using the first ratio value (0.9)
+                    rstar(m) = preds(1,1) % just using the first ratio value (0.9)
                     break
                 else
                     rstar(m) = preds(k-1, 1); % largest ratio that tumor still resolves
                     break
                 end
             else
-                rstar(m) = 1; % stubborn point, never resolves
+                rstar(m) = 1 % stubborn point, never resolves
             end
         end
     end
@@ -251,9 +243,9 @@ ax = gca
 ax.FontSize = 18
 title("Patient-Specific Effector Cell Survival Fractions", FontSize = 20)
 
-%% Solving ODE with patient specific SF ratios (USING rstar)
+%% Solving ODE with patient specific SF ratios (rstar)
 %tic
-"Starting Smaller Loop"
+"Starting Big Loop"
 parfor m = 1:size(I0_orig,1)
 % parfor m = 1:10
 % for m = 38
@@ -324,34 +316,6 @@ for m = 1:size(I0_orig, 1)
         plot(x_rt, y_rt, 'r.', markersize = 15, LineWidth=2)
     end
 end
-
-Npoints = 10e2;
-x = logspace(-10,1,Npoints);
-y = logspace(-5,3,Npoints);
-
-dx = x(2)-x(1);
- 
-dy = y(2)-y(1);
-[X, Y] = meshgrid(x,y);
-G = rhs([],[reshape(X,1,[]); reshape(Y,1,[])]);
-U = reshape(G(1,:),Npoints,Npoints);
-V = reshape(G(2,:),Npoints,Npoints)*dx/dy;
-N = sqrt(U.^2+V.^2);
-U = U./N; V = V./N;
-[X1, Y1] = meshgrid(0:Npoints-1,0:Npoints-1);
-q = quiver(X1,Y1,U,V); 
-q.Color = [0 0 0]; 
-q.AutoScaleFactor = 0.5;
-
- 
-% Kuznetzov Params
-sigma = 0.118; rho = 0.95;    eta = 20.19;  mu = 0.00311;
-delta = 0.374; alpha = 1.636; beta = 0.002; gamma = 1;   
-
-% Saket's adjustments
-alpha = 7.6;
-sigma = 1.3;
-
 % Plot separatrix
 plot(curve.x/max(x)*(Npoints-1),curve.y/max(y)*(Npoints-1), LineWidth=2)
 
