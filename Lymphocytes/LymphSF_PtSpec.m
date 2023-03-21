@@ -207,6 +207,7 @@ for m = 1:size(SFends, 1)
         SFends{m, 4} = 1;
     end
 end
+"done with switches"
 %% Finding R*
 rstar = zeros(size(SFends, 1), 1);
 for m = 1:size(SFends, 1)
@@ -242,7 +243,7 @@ for m = 1:size(SFends, 1)
         end
     end
 end
-rstar
+"done with finding rstar"
 
 %% Distribution of rstar values
 figure(1); clf
@@ -299,6 +300,18 @@ parfor m = 1:size(I0_orig,1)
             ypaths{m} = ypath;
     end
 %toc
+"done with Smaller Loop"
+
+%% Fixing SFends
+for m = 1:size(SFends, 1)
+    SFends{m, 4} = zeros(1)
+    if max(SFends{m, 3}) == 0 % never resolves
+%     res = max(SFends{m, 3} - min(SFends{m, 3}));
+%     if res > 0 % indicating that it does resolve
+        SFends{m, 4} = 1; 
+    end
+end
+"done with fixing SFends"
 
 
 %% Plotting with pt-spec SF ratios %% <-- DONT USE THIS, USE THE SCRIPT IN PLOTS_ETC
