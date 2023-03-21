@@ -1,16 +1,6 @@
 %% load data
 % Get data (already generated from LymphSF_PtSpec.m)
 load("/Users/saketpandit/Documents/Moffitt/Project/MATLAB/Scripts/Lymphocytes/pt_spec_sf.mat")
-%% Fixing SFends
-for m = 1:size(SFends, 1)
-    SFends{m, 4} = zeros(1)
-    if max(SFends{m, 3}) == 0 % never resolves
-%     res = max(SFends{m, 3} - min(SFends{m, 3}));
-%     if res > 0 % indicating that it does resolve
-        SFends{m, 4} = 1; 
-    end
-end
-SFends
 
 
 %% Plot initCond + postRT
@@ -70,20 +60,21 @@ title(tit, FontSize = 40)
 % 
 
 
-%% pt spec SF rat
+%% Patient Specific SF Ratios
 
 figure(8); clf  
 subplot(1,1,1)
 % Plot separatrix
 
-% Npoints = 30;
-% x = linspace(0,3.5,Npoints);
-% y = linspace(0,450,Npoints);
+% original values
+Npoints = 30;
+x = linspace(0,3.5,Npoints);
+y = linspace(0,450,Npoints);
 
 % % just playing around
-Npoints = 30;
-x = logspace(-4,3,Npoints);
-y = logspace(-10,3,Npoints);
+% Npoints = 30;
+% x = logspace(-4,3,Npoints);
+% y = logspace(-10,3,Npoints);
 
 
 % Kuznetzov parameters
